@@ -9,6 +9,9 @@ import re
 
 class Loding(object):
 
+    class WifiConnectError(BaseException):
+        pass
+
     def connect(self):
         # 获取本机IP
         hostname = socket.gethostname()
@@ -34,6 +37,7 @@ class Loding(object):
         }
 
         url = base_url + urllib.parse.urlencode(data)
+
         # 连接
         responed = requests.get(url=url)
 
@@ -56,7 +60,7 @@ class Loding(object):
 
     def lode_ini(self):
         conf = configparser.ConfigParser()
-        conf.read('相关信息.ini', encoding="utf-8")
+        conf.read(r'相关信息.ini', encoding="utf-8")
         self.account = conf['MESSAGE']['account']
         self.password = conf['MESSAGE']['password']
         self.operator = conf['MESSAGE']['operator']
@@ -78,21 +82,24 @@ class Loding(object):
         temp_profile = ifaces.add_network_profile(profile_info)
         ifaces.connect(temp_profile)
         time.sleep(1)
-        if ifaces.status() == pywifi.const.IFACE_CONNECTED:
-            return True
-        else: 
-            return False
+        if ifaces.status() != pywifi.const.IFACE_CONNECTED:
+            raise self.WifiConnectError
         
     def main(self):
         try:
             self.lode_ini()
             if(self.use_wifi == '1'):  # 注意.ini文件读入的是str
                 self.wifi_connect()
+                time.sleep(1)          # 等待1秒后继续，防止 [WinError 10051] 错误
             self.connect()
             if self.check_connect():
                 print("登录成功")
             else:
                 print("登录失败,请检查相关信息,并重试")
+        except KeyError:
+            print("请检查 相关信息.ini 文件位置")
+        except self.WifiConnectError:
+            print("wifi连接错误，请重新运行本程序")
         except :
             print("程序错误,请检查相关信息,并重试")
         finally:
