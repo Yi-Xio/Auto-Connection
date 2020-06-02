@@ -83,13 +83,19 @@ class Loding(object):
         ifaces.connect(temp_profile)
         time.sleep(1)
         if ifaces.status() != pywifi.const.IFACE_CONNECTED:
-            raise self.WifiConnectError
+            return False
+        else:
+            return True
         
     def main(self):
+        flag = 0
         try:
             self.lode_ini()
             if(self.use_wifi == '1'):  # 注意.ini文件读入的是str
-                self.wifi_connect()
+                while(not self.wifi_connect()):
+                    flag += 1
+                    if flag > 5 :
+                        raise self.WifiConnectError
                 time.sleep(1)          # 等待1秒后继续，防止 [WinError 10051] 错误
             self.connect()
             if self.check_connect():
@@ -106,9 +112,16 @@ class Loding(object):
             os.system('pause')
 
     def text(self):
-        pass
+        self.lode_ini()
+        if(self.use_wifi == '1'):  # 注意.ini文件读入的是str
+            self.wifi_connect()
+            time.sleep(1)
+        self.connect()
+        if self.check_connect():
+            print("登录成功")
+        else:
+            print("登录失败,请检查相关信息,并重试")
         
-
 Loding().main()
 
 
