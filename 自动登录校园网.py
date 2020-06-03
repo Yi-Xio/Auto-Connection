@@ -1,7 +1,5 @@
 import configparser
 import requests
-import urllib
-import socket
 import time
 import pywifi
 import os
@@ -13,34 +11,10 @@ class Loding(object):
         pass
 
     def connect(self):
-        # 获取本机IP
-        hostname = socket.gethostname()
-        ip = socket.getaddrinfo(hostname,None)[-1][4][0]
-        # 获取时间戳
-        time_1 = round(time.time()*1000)
         # 构造url
-        base_url = 'http://10.2.5.251:801/eportal/?'
-
-        data = {
-            'c':'Portal',
-            'a':'login',
-            'callback':'dr' + str(time_1),
-            'login_method': '1',
-            'user_account': str(self.account) + '@' + str(self.operator),
-            'user_password': str(self.password),
-            'wlan_user_ip': ip,          
-            'wlan_user_mac': '',
-            'wlan_ac_ip': '',
-            'wlan_ac_name': '',
-            'jsVersion': '3.0',
-            '_':str(time_1+1500)
-        }
-
-        url = base_url + urllib.parse.urlencode(data)
-
+        url = 'http://10.2.5.251:801/eportal/?c=Portal&a=login&login_method=1&user_account=' + str(self.account) + '%40' + str(self.operator) + '&user_password=' + str(self.password)
         # 连接
         responed = requests.get(url=url)
-
         # 查验信息
 
         if(re.match(responed.text,'UmFkOkxpbWl0IFVzZXJzIEVycg==')):
@@ -88,41 +62,30 @@ class Loding(object):
             return True
         
     def main(self):
-        flag = 0
         try:
             self.lode_ini()
             if(self.use_wifi == '1'):  # 注意.ini文件读入的是str
-                while(not self.wifi_connect()):
-                    flag += 1
-                    if flag > 5 :
-                        raise self.WifiConnectError
-                time.sleep(1)          # 等待1秒后继续，防止 [WinError 10051] 错误
+                self.wifi_connect()
+                time.sleep(1)
             self.connect()
             if self.check_connect():
                 print("登录成功")
+                return True
             else:
-                print("登录失败,请检查相关信息,并重试")
+                print("登录失败,正在重试")
+                return False
         except KeyError:
             print("请检查 相关信息.ini 文件位置")
-        except self.WifiConnectError:
-            print("wifi连接错误，请重新运行本程序")
+            return False
         except :
-            print("程序错误,请检查相关信息,并重试")
-        finally:
-            os.system('pause')
+            print("出现错误，正在重试")
+            return False
 
-    def text(self):
-        self.lode_ini()
-        if(self.use_wifi == '1'):  # 注意.ini文件读入的是str
-            self.wifi_connect()
-            time.sleep(1)
-        self.connect()
-        if self.check_connect():
-            print("登录成功")
-        else:
-            print("登录失败,请检查相关信息,并重试")
-        
-Loding().main()
+
+while(not Loding().main()):
+    pass
+os.system('pause')
+
 
 
 
